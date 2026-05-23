@@ -4,8 +4,39 @@ import ntpath
 import time
 from . import util
 from . import html
-from scipy.misc import imresize
+#from scipy.misc import imresize
 
+#-------------------------------------
+import numpy as np
+from PIL import Image
+
+def imresize(img, size):
+    """
+    Replacement for deprecated scipy.misc.imresize.
+
+    img:
+        numpy array, H x W x C or H x W
+    size:
+        tuple, usually (height, width)
+    """
+    if isinstance(size, int):
+        size = (size, size)
+
+    if isinstance(img, Image.Image):
+        pil_img = img
+    else:
+        arr = np.asarray(img)
+
+        if arr.dtype != np.uint8:
+            arr = np.clip(arr, 0, 255).astype(np.uint8)
+
+        pil_img = Image.fromarray(arr)
+
+    # PIL resize uses (width, height), but scipy imresize used (height, width)
+    pil_img = pil_img.resize((size[1], size[0]), Image.BICUBIC)
+
+    return np.asarray(pil_img)
+#-------------------------------------
 
 class Visualizer():
     def __init__(self, opt):
@@ -138,7 +169,8 @@ class Visualizer():
         links = []
 
         for label, im in visuals.items():
-            if label is 'fake_B':
+            #if label is 'fake_B':
+            if label == 'fake_B':
 
                 # image_name = '%s_%s.png' % (name, label)
                 image_name = '%s.png' % (name)

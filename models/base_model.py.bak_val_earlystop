@@ -64,7 +64,7 @@ class BaseModel():
     #     print('learning rate = %.7f' % lr)
 
     #-------------------------------
-    # update learning rate (called once every epoch during decay stage)
+    # update learning rate (called once every epoch)
     def update_learning_rate(self):
         if self.opt.niter_decay <= 0:
             lr = self.old_lr

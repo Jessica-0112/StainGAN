@@ -3,9 +3,6 @@ from options.train_options import TrainOptions
 from data.data_loader import CreateDataLoader
 from models.models import create_model
 from util.visualizer_time import Visualizer
-#-------------------
-from util.lmdb_validation import LMDBValidationEvaluator
-#-------------------
 
 opt = TrainOptions().parse()
 data_loader = CreateDataLoader(opt)
@@ -15,13 +12,6 @@ print('#training images = %d' % dataset_size)
 
 model = create_model(opt)
 visualizer = Visualizer(opt)
-
-#------------------------
-validator = None
-if opt.use_validation:
-    validator = LMDBValidationEvaluator(opt)
-#------------------------
-    
 total_steps = 0
 
 for epoch in range(opt.epoch_count, opt.niter + opt.niter_decay + 1):
@@ -62,28 +52,6 @@ for epoch in range(opt.epoch_count, opt.niter + opt.niter_decay + 1):
           (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
     #model.update_learning_rate()
     #-------------------------
-    # Run validation after epoch
-    if validator is not None and epoch % opt.val_freq_epoch == 0:
-        val_metrics = validator.evaluate(model, epoch)
-        print(
-            "[Validation] "
-            "epoch=%d, val_L1=%.6f, val_PSNR=%.4f, val_SSIM=%.4f"
-            % (
-                epoch,
-                val_metrics["val_L1"],
-                val_metrics["val_PSNR"],
-                val_metrics["val_SSIM"],
-            )
-        )
-
-        if validator.should_stop():
-            print(
-                "[EarlyStopping] Stop training at epoch %d. "
-                "Best metric is saved as best_net_*.pth." % epoch
-            )
-            break
-
-    # Update learning rate only during decay stage
     if epoch > opt.niter and opt.niter_decay > 0:
         model.update_learning_rate()
     #-------------------------

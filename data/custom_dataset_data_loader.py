@@ -13,6 +13,14 @@ def CreateDataset(opt):
     elif opt.dataset_mode == 'single':
         from data.single_dataset import SingleDataset
         dataset = SingleDataset()
+    #-------------------------------------------------------------
+    elif opt.dataset_mode == 'lmdb_staingan':
+        from data.lmdb_staingan_dataset import LMDBStainGANDataset
+        dataset = LMDBStainGANDataset()
+    elif opt.dataset_mode == 'lmdb_single':
+        from data.lmdb_single_dataset import LMDBSingleDataset
+        dataset = LMDBSingleDataset()
+    #-------------------------------------------------------------
     else:
         raise ValueError("Dataset [%s] not recognized." % opt.dataset_mode)
 
@@ -39,9 +47,21 @@ class CustomDatasetDataLoader(BaseDataLoader):
 
     def __len__(self):
         return min(len(self.dataset), self.opt.max_dataset_size)
-
+    
+    #-------------------------------------------------
     def __iter__(self):
+        # 每個 epoch 開始前，讓 dataset 重新產生 patient-balanced keys
+        if hasattr(self.dataset, "resample_epoch_keys"):
+            self.dataset.resample_epoch_keys()
+
         for i, data in enumerate(self.dataloader):
-            if i >= self.opt.max_dataset_size:
+            if i * self.opt.batchSize >= self.opt.max_dataset_size:
                 break
             yield data
+    #-------------------------------------------------
+
+    # def __iter__(self):
+    #     for i, data in enumerate(self.dataloader):
+    #         if i >= self.opt.max_dataset_size:
+    #             break
+    #         yield data

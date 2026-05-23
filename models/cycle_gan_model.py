@@ -88,8 +88,8 @@ class CycleGANModel(BaseModel):
         input_A = input['A' if AtoB else 'B']
         input_B = input['B' if AtoB else 'A']
         if len(self.gpu_ids) > 0:
-            input_A = input_A.cuda(self.gpu_ids[0], async=True)
-            input_B = input_B.cuda(self.gpu_ids[0], async=True)
+            input_A = input_A.cuda(self.gpu_ids[0], non_blocking=True)
+            input_B = input_B.cuda(self.gpu_ids[0], non_blocking=True)
         self.input_A = input_A
         self.input_B = input_B
         self.image_paths = input['A_paths' if AtoB else 'B_paths']
@@ -129,12 +129,12 @@ class CycleGANModel(BaseModel):
     def backward_D_A(self):
         fake_B = self.fake_B_pool.query(self.fake_B)
         loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
-        self.loss_D_A = loss_D_A.data[0]
+        self.loss_D_A = loss_D_A.item()
 
     def backward_D_B(self):
         fake_A = self.fake_A_pool.query(self.fake_A)
         loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
-        self.loss_D_B = loss_D_B.data[0]
+        self.loss_D_B = loss_D_B.item()
 
     def backward_G(self):
         lambda_idt = self.opt.identity
@@ -151,8 +151,8 @@ class CycleGANModel(BaseModel):
 
             self.idt_A = idt_A.data
             self.idt_B = idt_B.data
-            self.loss_idt_A = loss_idt_A.data[0]
-            self.loss_idt_B = loss_idt_B.data[0]
+            self.loss_idt_A = loss_idt_A.item()
+            self.loss_idt_B = loss_idt_B.item()
         else:
             loss_idt_A = 0
             loss_idt_B = 0
@@ -178,6 +178,11 @@ class CycleGANModel(BaseModel):
         rec_B = self.netG_A(fake_A)
         loss_cycle_B = self.criterionCycle(rec_B, self.real_B) * lambda_B
 
+        #---------------------------------------------------
+        loss_Aicha_A = torch.tensor(0.0, device=self.real_A.device)
+        loss_Aicha_B = torch.tensor(0.0, device=self.real_A.device)
+        #---------------------------------------------------
+        
         # aicha forward
         if self.opt.aicha_loss:
             print("I AM AICHCA LOSS")
@@ -236,17 +241,17 @@ class CycleGANModel(BaseModel):
         self.rec_A = rec_A.data
         self.rec_B = rec_B.data
 
-        self.loss_G_A = loss_G_A.data[0]
-        self.loss_G_B = loss_G_B.data[0]
+        self.loss_G_A = loss_G_A.item()
+        self.loss_G_B = loss_G_B.item()
 
         if self.opt.aicha_loss:
             # AichaLoss
-            self.loss_Aicha_A = loss_Aicha_A.data[0]
-            self.loss_Aicha_B = loss_Aicha_B.data[0]
+            self.loss_Aicha_A = loss_Aicha_A.item()
+            self.loss_Aicha_B = loss_Aicha_B.item()
         else:
             # cycleLoss
-            self.loss_cycle_A = loss_cycle_A.data[0]
-            self.loss_cycle_B = loss_cycle_B.data[0]
+            self.loss_cycle_A = loss_cycle_A.item()
+            self.loss_cycle_B = loss_cycle_B.item()
 
     #
     # def get_gradient(self, img):
